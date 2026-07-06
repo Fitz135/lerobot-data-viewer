@@ -746,6 +746,23 @@ function defaultSeries(keys: string[]): string[] {
   return keys.slice(0, 6);
 }
 
+const LINE_COLORS = [
+  "#2563eb",
+  "#dc2626",
+  "#16a34a",
+  "#9333ea",
+  "#ca8a04",
+  "#0891b2",
+  "#db2777",
+  "#4f46e5",
+  "#ea580c",
+  "#0f766e",
+];
+
+function lineColor(index: number): string {
+  return LINE_COLORS[index % LINE_COLORS.length];
+}
+
 function UPlotChart({ data, keys, frame }: { data: Timeseries; keys: string[]; frame: number }) {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const plotRef = React.useRef<uPlot | null>(null);
@@ -762,9 +779,11 @@ function UPlotChart({ data, keys, frame }: { data: Timeseries; keys: string[]; f
       axes: [{ label: "frame" }, {}],
       series: [
         {},
-        ...keys.map((key) => ({
+        ...keys.map((key, index) => ({
           label: key.split(".").slice(-1)[0],
+          stroke: lineColor(index),
           width: 1.5,
+          points: { show: false },
         })),
       ],
     };
