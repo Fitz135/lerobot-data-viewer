@@ -541,7 +541,7 @@ function EpisodeBrowser({ datasetId, taskId, episodeIndex }: { datasetId: string
     [datasetId, taskId, episodeIndex],
   );
   const timeseries = useApi<Timeseries>(
-    `/datasets/${encodeURIComponent(datasetId)}/tasks/${encodeURIComponent(taskId)}/episodes/${episodeIndex}/timeseries`,
+    `/datasets/${encodeURIComponent(datasetId)}/tasks/${encodeURIComponent(taskId)}/episodes/${episodeIndex}/timeseries?downsample=1000`,
     [datasetId, taskId, episodeIndex],
   );
   const [frame, setFrame] = React.useState(0);
@@ -596,12 +596,12 @@ function EpisodeBrowser({ datasetId, taskId, episodeIndex }: { datasetId: string
     return () => window.clearInterval(timer);
   }, [playing, videos, fps, maxFrame]);
 
-  if (detail.loading || timeseries.loading) return <Loading />;
+  if (detail.loading) return <Loading />;
   if (detail.error) return <ErrorBox message={detail.error} />;
-  if (timeseries.error) return <ErrorBox message={timeseries.error} />;
-  if (!episode || !timeseries.data) return null;
-  const stateKeys = Object.keys(timeseries.data.series).filter((key) => key.startsWith("observation.state."));
-  const actionKeys = Object.keys(timeseries.data.series).filter((key) => key.startsWith("action."));
+  if (!episode) return null;
+  const timeSeriesData = timeseries.data;
+  const stateKeys = timeSeriesData ? Object.keys(timeSeriesData.series).filter((key) => key.startsWith("observation.state.")) : [];
+  const actionKeys = timeSeriesData ? Object.keys(timeSeriesData.series).filter((key) => key.startsWith("action.")) : [];
   return (
     <section>
       <Breadcrumb
@@ -651,8 +651,19 @@ function EpisodeBrowser({ datasetId, taskId, episodeIndex }: { datasetId: string
             <span>Frame {number(frame)} / {number(maxFrame)}</span>
             <span>{seconds(frame / fps)}</span>
           </div>
-          <TimeSeriesPlot title="observation.state" data={timeseries.data} keys={stateKeys} frame={frame} />
-          <TimeSeriesPlot title="action" data={timeseries.data} keys={actionKeys} frame={frame} />
+          {timeseries.loading && <Loading />}
+          {timeseries.error && <ErrorBox message={`Timeseries failed: ${timeseries.error}`} />}
+          {timeSeriesData && (
+            <>
+              {timeSeriesData.downsampled && (
+                <div className="notice">
+                  Timeseries is downsampled from {number(timeSeriesData.source_length)} frames for browser performance.
+                </div>
+              )}
+              <TimeSeriesPlot title="observation.state" data={timeSeriesData} keys={stateKeys} frame={frame} />
+              <TimeSeriesPlot title="action" data={timeSeriesData} keys={actionKeys} frame={frame} />
+            </>
+          )}
         </div>
         <aside className="sidePanel">
           <h2>Health</h2>

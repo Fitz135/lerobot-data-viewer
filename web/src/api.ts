@@ -1,17 +1,22 @@
 const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000/api";
 const STORAGE_KEY = "ldv.apiBase";
 
+function normalizeApiBase(value: string): string {
+  return value.trim().replace(/\/$/, "");
+}
+
 export function getApiBase(): string {
   const queryValue = new URLSearchParams(window.location.search).get("api");
   if (queryValue) {
-    localStorage.setItem(STORAGE_KEY, queryValue);
-    return queryValue;
+    const normalized = normalizeApiBase(queryValue);
+    localStorage.setItem(STORAGE_KEY, normalized);
+    return normalized;
   }
   return localStorage.getItem(STORAGE_KEY) || DEFAULT_API_BASE;
 }
 
 export function setApiBase(value: string): void {
-  const normalized = value.trim().replace(/\/$/, "");
+  const normalized = normalizeApiBase(value);
   if (normalized) {
     localStorage.setItem(STORAGE_KEY, normalized);
   } else {
