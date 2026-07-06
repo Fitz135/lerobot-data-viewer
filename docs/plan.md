@@ -69,16 +69,22 @@ Global dashboard:
 Dataset detail:
 
 - task table
+- dataset-level episode id lookup
 - length distribution summary
 - camera/schema summary
 - health-check aggregation
 - refresh state
+- manual refresh actions for smoke and full indexing
 
 Task detail:
 
 - episode table with paging/filtering
 - length and issue summary
 - links into episode browser
+
+Refresh polling is bounded to a user-triggered refresh. After `Smoke Refresh`
+or `Full Refresh`, the frontend polls `index-runs` until the corresponding run
+finishes, refreshes dashboard/task data once, and stops polling.
 
 ## Episode Browser
 
@@ -132,15 +138,33 @@ POST /api/datasets/{dataset_id}/refresh
 GET  /api/index-runs
 ```
 
+`GET /api/datasets/{dataset_id}/episodes/search?q=...` accepts:
+
+```text
+12
+episode_000012
+episode_000012.parquet
+task_id/12
+task_id/episode_000012
+dataset_id/task_id/12
+```
+
+Plain episode indexes search across all tasks in the selected dataset. Queries
+with `task_id` search within that task.
+
 ## Acceptance
 
 1. `make index` builds a complete SQLite cache for `rdt_lerobot_v21`.
 2. Global dashboard shows task, episode, frame, video, and issue totals.
 3. Dataset detail shows task table, length summary, schema/camera summary, and
    health-check aggregation.
-4. Task detail supports issue/length browsing and opens an episode.
-5. Episode browser opens `arrange_word_ALOHA/episode_000000`, synchronizes
+4. Dataset detail supports episode id lookup and links matching rows into the
+   episode browser.
+5. Task detail supports issue/length browsing and opens an episode.
+6. Episode browser opens `arrange_word_ALOHA/episode_000000`, synchronizes
    videos by frame index, and shows state/action curves.
-6. Media endpoints cannot read outside registered dataset roots.
-7. Failed refresh keeps old active cache intact.
-8. Tests cover path whitelist, stable ids, health checks, and timeseries shape.
+7. Media endpoints cannot read outside registered dataset roots.
+8. Failed refresh keeps old active cache intact.
+9. Refresh polling stops after the triggered index run completes.
+10. Tests cover path whitelist, stable ids, health checks, episode search, and
+    timeseries shape.

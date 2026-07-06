@@ -13,6 +13,13 @@ files, and mp4 videos from the server.
 GitHub Pages is HTTPS. For a public deployment, use an HTTPS backend URL to
 avoid browser mixed-content blocking.
 
+The production frontend also has runtime API configuration. Users can set the
+API base in the top-right `Set API` field, or pass it in the URL:
+
+```text
+https://fitz135.github.io/lerobot-data-viewer/?api=https://viewer-api.example.com/api
+```
+
 ## Build Frontend For GitHub Pages
 
 If the repo is served from `https://USER.github.io/REPO/`, build with:
@@ -45,6 +52,35 @@ If your site is a project page, the origin is still only
 `https://USER.github.io`; paths such as `/REPO/` are not part of the CORS
 origin.
 
+## VS Code Proxy Backend
+
+On a headless server where only VS Code forwarded ports are exposed, use:
+
+```bash
+./scripts/start_server.sh
+```
+
+The script:
+
+- starts the FastAPI backend on `127.0.0.1:8000`
+- sets `LDRV_CORS_ORIGINS=https://fitz135.github.io` by default
+- derives the public backend URL from `VSCODE_PROXY_URI` when available
+- prints the GitHub Pages URL with `api=<proxy-url>/api`
+- reuses an already healthy backend on the same port
+
+If `VSCODE_PROXY_URI` is not available in the shell, forward port `8000` in the
+VS Code Ports panel and use the forwarded URL manually:
+
+```text
+https://fitz135.github.io/lerobot-data-viewer/?api=<VSCODE_8000_PROXY_URL>/api
+```
+
+If port `8000` is occupied by another process:
+
+```bash
+API_PORT=8001 ./scripts/start_server.sh
+```
+
 ## Backend Exposure Options
 
 Recommended options:
@@ -57,4 +93,3 @@ Recommended options:
 Avoid binding the API directly to `0.0.0.0` without authentication. The media
 endpoint streams registered dataset videos and should not be public unless the
 data is intended to be public.
-
