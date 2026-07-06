@@ -1,0 +1,440 @@
+:root {
+  color: #20242a;
+  background: #f5f6f8;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: #1464a5;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+select {
+  border: 1px solid #c6ccd3;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #20242a;
+  font: inherit;
+  min-height: 34px;
+}
+
+button {
+  cursor: pointer;
+  padding: 0 12px;
+}
+
+input,
+select {
+  padding: 0 10px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 650;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid #d9dde2;
+  background: #ffffff;
+  gap: 16px;
+}
+
+.brand {
+  color: #20242a;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.apiBase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 280px;
+}
+
+.apiBase input {
+  width: min(420px, 38vw);
+}
+
+.apiBase button {
+  white-space: nowrap;
+}
+
+main {
+  padding: 24px;
+}
+
+.sectionHeader {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.sectionHeader p {
+  margin-top: 6px;
+  color: #69727d;
+  max-width: 960px;
+}
+
+.actions,
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.toolbar {
+  margin: 18px 0 12px;
+}
+
+.toolbar input {
+  min-width: min(520px, 100%);
+}
+
+.breadcrumb {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  color: #69727d;
+  font-size: 14px;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.stat {
+  background: #ffffff;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.statLabel {
+  color: #69727d;
+  font-size: 13px;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #dfe3e8;
+}
+
+.dataTable th,
+.dataTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e8ebef;
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.dataTable th {
+  background: #eef1f4;
+  color: #4b5560;
+  font-weight: 650;
+}
+
+.description {
+  margin-top: 4px;
+  color: #69727d;
+  max-width: 760px;
+}
+
+.notice,
+.runPanel {
+  background: #ffffff;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  margin: 14px 0;
+  padding: 12px;
+}
+
+.notice.error {
+  border-color: #c94b4b;
+  color: #9f2525;
+}
+
+.progress {
+  height: 8px;
+  background: #dfe3e8;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.progress div {
+  height: 100%;
+  background: #2b7a78;
+}
+
+.issueText {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.muted {
+  color: #69727d;
+}
+
+.bad {
+  color: #a12828;
+}
+
+.warn {
+  color: #946200;
+}
+
+.episodeLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+
+.videoAndPlots {
+  min-width: 0;
+}
+
+.videoGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-auto-rows: minmax(160px, auto);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.videoGrid figure {
+  min-width: 0;
+  margin: 0;
+  background: #111820;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #30363d;
+}
+
+.videoGrid video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #111820;
+}
+
+.videoGrid figcaption {
+  padding: 7px 10px;
+  color: #f0f3f6;
+  font-size: 13px;
+}
+
+.primaryVideo {
+  grid-row: span 2;
+}
+
+.transport {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(180px, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+  background: #ffffff;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.transport input {
+  width: 100%;
+}
+
+.plotBlock {
+  background: #ffffff;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  padding: 12px;
+}
+
+.plotHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chips button {
+  min-height: 28px;
+  font-size: 13px;
+}
+
+.plot {
+  width: 100%;
+  min-height: 240px;
+}
+
+.sidePanel {
+  background: #ffffff;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.sidePanel h2 {
+  margin: 12px 0 8px;
+}
+
+.sidePanel h2:first-child {
+  margin-top: 0;
+}
+
+.healthList {
+  display: grid;
+  gap: 8px;
+}
+
+.health {
+  border-left: 4px solid #8b949e;
+  background: #f5f6f8;
+  padding: 8px;
+  font-size: 13px;
+}
+
+.health.error {
+  border-left-color: #c94b4b;
+}
+
+.health.warning {
+  border-left-color: #d99a26;
+}
+
+.health.info {
+  border-left-color: #407ec9;
+}
+
+.health span {
+  margin-left: 8px;
+  color: #69727d;
+}
+
+.health p {
+  margin-top: 4px;
+}
+
+.fileList {
+  display: grid;
+  gap: 8px;
+  color: #69727d;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+code {
+  background: #eef1f4;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+@media (max-width: 960px) {
+  main {
+    padding: 14px;
+  }
+
+  .sectionHeader,
+  .episodeLayout {
+    display: block;
+  }
+
+  .actions {
+    margin-top: 12px;
+  }
+
+  .videoGrid,
+  .transport {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryVideo {
+    grid-row: auto;
+  }
+
+  .sidePanel {
+    margin-top: 14px;
+  }
+
+  .topbar {
+    height: auto;
+    align-items: stretch;
+    flex-direction: column;
+    padding: 10px 14px;
+  }
+
+  .apiBase {
+    margin-left: 0;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .apiBase input {
+    width: 100%;
+  }
+}

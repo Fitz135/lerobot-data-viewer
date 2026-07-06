@@ -1,0 +1,12 @@
+datasets:
+  - id: rdt_lerobot_v21
+    name: RDT LeRobot v2.1
+    root: /inspire/qb-ilm/project/semantic-visual-tokenizer/public/wam/data_processed/rdt_lerobot_v21
+
+index:
+  parquet_workers: 4
+  ffprobe_workers: 4
+  duration_abs_tolerance_sec: 0.5
+  duration_rel_tolerance: 0.02
+  extreme_abs_value: 1000000.0
+
