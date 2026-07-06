@@ -234,21 +234,40 @@ function IssueText({ error, warning, info }: { error?: number | null; warning?: 
 function DatasetDetail({ datasetId }: { datasetId: string }) {
   const [search, setSearch] = React.useState("");
   const [issue, setIssue] = React.useState("any");
+  const [refreshWatch, setRefreshWatch] = React.useState<{ previousRunId: number | null; activeRunId: number | null } | null>(null);
   const detail = useApi<Dataset>(`/datasets/${encodeURIComponent(datasetId)}`, [datasetId]);
   const tasks = useApi<Paged<Task>>(
     `/datasets/${encodeURIComponent(datasetId)}/tasks?search=${encodeURIComponent(search)}&issue=${issue}&page_size=100`,
     [datasetId, search, issue],
   );
   const runs = useApi<IndexRuns>(`/index-runs?dataset_id=${encodeURIComponent(datasetId)}&limit=5`, [datasetId]);
+  const latestRun = runs.data?.runs?.[0] ?? null;
 
   React.useEffect(() => {
+    if (!refreshWatch) return;
     const timer = window.setInterval(() => {
       runs.reload();
-      detail.reload();
-      tasks.reload();
     }, 4000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [refreshWatch]);
+
+  React.useEffect(() => {
+    if (!refreshWatch || !latestRun) return;
+    const isExistingRunningRun = latestRun.id === refreshWatch.previousRunId && latestRun.status === "running";
+    const isNewRun = latestRun.id !== refreshWatch.previousRunId;
+    const activeRunId = refreshWatch.activeRunId;
+
+    if (activeRunId === null && (isExistingRunningRun || isNewRun)) {
+      setRefreshWatch({ ...refreshWatch, activeRunId: latestRun.id });
+      return;
+    }
+
+    if (activeRunId !== null && latestRun.id === activeRunId && latestRun.status !== "running") {
+      setRefreshWatch(null);
+      detail.reload();
+      tasks.reload();
+    }
+  }, [refreshWatch, latestRun?.id, latestRun?.status]);
 
   if (detail.loading) return <Loading />;
   if (detail.error) return <ErrorBox message={detail.error} />;
@@ -256,9 +275,11 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
   if (!dataset) return null;
   const active = dataset.active_generation_id !== null && dataset.active_generation_id !== undefined;
   async function refresh(smoke: boolean) {
+    const previousRunId = latestRun?.id ?? null;
     await apiPost(
       `/datasets/${encodeURIComponent(datasetId)}/refresh?smoke=${smoke ? "true" : "false"}${smoke ? "&max_tasks=2&max_episodes_per_task=2" : ""}`,
     );
+    setRefreshWatch({ previousRunId, activeRunId: null });
     runs.reload();
   }
   return (
