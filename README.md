@@ -41,5 +41,11 @@ To verify the printed URLs without starting the backend:
 PRINT_ONLY=1 ./scripts/start_server.sh
 ```
 
+If port `8000` is already used by another process:
+
+```bash
+API_PORT=8001 ./scripts/start_server.sh
+```
+
 The first version is read-only. It writes only local cache/index data under
 `backend/data/` and never modifies the LeRobot dataset roots.
