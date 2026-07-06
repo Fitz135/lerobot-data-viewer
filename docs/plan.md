@@ -123,6 +123,7 @@ GET  /api/datasets
 GET  /api/datasets/{dataset_id}
 GET  /api/datasets/{dataset_id}/tasks
 GET  /api/datasets/{dataset_id}/tasks/{task_id}
+GET  /api/datasets/{dataset_id}/episodes/search
 GET  /api/datasets/{dataset_id}/tasks/{task_id}/episodes
 GET  /api/datasets/{dataset_id}/tasks/{task_id}/episodes/{episode_index}
 GET  /api/datasets/{dataset_id}/tasks/{task_id}/episodes/{episode_index}/timeseries
@@ -143,4 +144,3 @@ GET  /api/index-runs
 6. Media endpoints cannot read outside registered dataset roots.
 7. Failed refresh keeps old active cache intact.
 8. Tests cover path whitelist, stable ids, health checks, and timeseries shape.
-

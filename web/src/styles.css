@@ -132,6 +132,14 @@ main {
   min-width: min(520px, 100%);
 }
 
+.searchBlock {
+  margin: 18px 0;
+}
+
+.searchSummary {
+  margin: 0 0 8px;
+}
+
 .breadcrumb {
   display: flex;
   gap: 8px;

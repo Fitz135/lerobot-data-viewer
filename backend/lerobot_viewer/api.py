@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import re
 import threading
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +15,34 @@ from .db import active_generation, connect, init_db, insert_registered_datasets,
 from .identity import make_episode_uid
 from .indexer import index_dataset
 from .timeseries import read_episode_timeseries
+
+
+@dataclass(frozen=True)
+class EpisodeSearchQuery:
+    task_id: str | None
+    episode_index: int | None
+    dataset_matches: bool = True
+
+
+def parse_episode_search_query(dataset_id: str, query: str) -> EpisodeSearchQuery:
+    text = query.strip()
+    parts = [part for part in text.split("/") if part]
+    if len(parts) == 3:
+        return EpisodeSearchQuery(
+            task_id=parts[1],
+            episode_index=parse_episode_index(parts[2]),
+            dataset_matches=parts[0] == dataset_id,
+        )
+    if len(parts) == 2:
+        return EpisodeSearchQuery(task_id=parts[0], episode_index=parse_episode_index(parts[1]))
+    return EpisodeSearchQuery(task_id=None, episode_index=parse_episode_index(text))
+
+
+def parse_episode_index(value: str) -> int | None:
+    match = re.fullmatch(r"(?:episode_)?0*(\d+)(?:\.(?:parquet|mp4))?", value.strip(), flags=re.IGNORECASE)
+    if not match:
+        return None
+    return int(match.group(1))
 
 
 def make_router(app_config: AppConfig) -> APIRouter:
@@ -179,6 +209,45 @@ def make_router(app_config: AppConfig) -> APIRouter:
             if row is None:
                 raise HTTPException(status_code=404, detail="Task not found")
             return decode_row(row_to_dict(row) or {})
+        finally:
+            conn.close()
+
+    @router.get("/datasets/{dataset_id}/episodes/search")
+    def search_episodes(
+        dataset_id: str,
+        q: str = Query(..., min_length=1),
+        page_size: int = Query(default=50, ge=1, le=200),
+    ) -> dict[str, Any]:
+        dataset_or_404(dataset_id)
+        parsed = parse_episode_search_query(dataset_id, q)
+        if not parsed.dataset_matches or parsed.episode_index is None:
+            return {"items": [], "page": 1, "page_size": page_size, "total": 0}
+
+        conn = conn_scope()
+        try:
+            generation_id = require_generation(conn, dataset_id)
+            where = ["dataset_id = ?", "generation_id = ?", "episode_index = ?"]
+            params: list[Any] = [dataset_id, generation_id, parsed.episode_index]
+            if parsed.task_id:
+                where.append("task_id = ?")
+                params.append(parsed.task_id)
+            where_sql = " AND ".join(where)
+            total = conn.execute(f"SELECT COUNT(*) AS count FROM episodes WHERE {where_sql}", params).fetchone()["count"]
+            rows = conn.execute(
+                f"""
+                SELECT * FROM episodes
+                WHERE {where_sql}
+                ORDER BY task_id ASC, episode_index ASC
+                LIMIT ?
+                """,
+                params + [page_size],
+            ).fetchall()
+            return {
+                "items": [decode_row(row_to_dict(row) or {}) for row in rows],
+                "page": 1,
+                "page_size": page_size,
+                "total": total,
+            }
         finally:
             conn.close()
 
@@ -433,4 +502,3 @@ def iter_file_range(path: Path, start: int, end: int, chunk_size: int = 1024 * 1
                 break
             remaining -= len(chunk)
             yield chunk
-

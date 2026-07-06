@@ -293,6 +293,7 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
       <RefreshPanel runs={runs.data} />
       {active && (
         <>
+          <EpisodeSearch datasetId={datasetId} />
           <div className="toolbar">
             <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search task or description" />
             <select value={issue} onChange={(event) => setIssue(event.target.value)}>
@@ -307,6 +308,56 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
         </>
       )}
     </section>
+  );
+}
+
+function EpisodeSearch({ datasetId }: { datasetId: string }) {
+  const [query, setQuery] = React.useState("");
+  const [result, setResult] = React.useState<Paged<Episode> | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function search(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResult(null);
+      setError(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGet<Paged<Episode>>(
+        `/datasets/${encodeURIComponent(datasetId)}/episodes/search?q=${encodeURIComponent(trimmed)}&page_size=100`,
+      );
+      setResult(data);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="searchBlock">
+      <form className="toolbar" onSubmit={search}>
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Find episode: 12, episode_000012, task_id/12, or dataset/task_id/12"
+        />
+        <button type="submit">Find Episode</button>
+      </form>
+      {loading && <Loading />}
+      {error && <ErrorBox message={error} />}
+      {result && (
+        <div>
+          <div className="muted searchSummary">{number(result.total)} matching episodes</div>
+          <EpisodeTable datasetId={datasetId} episodes={result.items} showTask />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -409,11 +460,22 @@ function TaskDetail({ datasetId, taskId }: { datasetId: string; taskId: string }
   );
 }
 
-function EpisodeTable({ datasetId, taskId, episodes }: { datasetId: string; taskId: string; episodes: Episode[] }) {
+function EpisodeTable({
+  datasetId,
+  taskId,
+  episodes,
+  showTask = false,
+}: {
+  datasetId: string;
+  taskId?: string;
+  episodes: Episode[];
+  showTask?: boolean;
+}) {
   return (
     <table className="dataTable">
       <thead>
         <tr>
+          {showTask && <th>Task</th>}
           <th>Episode</th>
           <th>Length</th>
           <th>Duration</th>
@@ -424,8 +486,9 @@ function EpisodeTable({ datasetId, taskId, episodes }: { datasetId: string; task
       </thead>
       <tbody>
         {episodes.map((episode) => (
-          <tr key={episode.episode_index}>
-            <td><a href={href(["datasets", datasetId, "tasks", taskId, "episodes", String(episode.episode_index)])}>episode_{String(episode.episode_index).padStart(6, "0")}</a></td>
+          <tr key={`${episode.task_id}-${episode.episode_index}`}>
+            {showTask && <td><a href={href(["datasets", datasetId, "tasks", episode.task_id])}>{episode.task_id}</a></td>}
+            <td><a href={href(["datasets", datasetId, "tasks", taskId ?? episode.task_id, "episodes", String(episode.episode_index)])}>episode_{String(episode.episode_index).padStart(6, "0")}</a></td>
             <td>{number(episode.length)}</td>
             <td>{seconds(episode.duration_sec)}</td>
             <td>{number(episode.row_count)}</td>
