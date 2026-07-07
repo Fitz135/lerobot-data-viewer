@@ -356,7 +356,7 @@ function DatasetGlobalInfo({
   return (
     <div className="globalInfo">
       <div className="subsectionHeader">
-        <h2>Global Info</h2>
+        <h2>task</h2>
         {summary && (
           <div className="muted">
             {number(summary.total)} tasks / {number(summary.episode_total)} episodes
