@@ -12,6 +12,7 @@ import type {
   IndexRuns,
   Paged,
   Task,
+  TaskEpisodeSummary,
   TaskSummary,
   Timeseries,
   VideoRow,
@@ -323,7 +324,7 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
             loading={taskSummary.loading}
             error={taskSummary.error}
           />
-          <EpisodeSearch datasetId={datasetId} />
+          <EpisodeSearch datasetId={datasetId} tasks={taskSummary.data?.items ?? []} />
           <div className="toolbar">
             <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search task or description" />
             <select value={issue} onChange={(event) => setIssue(event.target.value)}>
@@ -391,17 +392,31 @@ function DatasetGlobalInfo({
   );
 }
 
-function EpisodeSearch({ datasetId }: { datasetId: string }) {
-  const [query, setQuery] = React.useState("");
+function EpisodeSearch({ datasetId, tasks }: { datasetId: string; tasks: TaskEpisodeSummary[] }) {
+  const [taskId, setTaskId] = React.useState("");
+  const [episodeId, setEpisodeId] = React.useState("");
   const [result, setResult] = React.useState<Paged<Episode> | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const requestId = React.useRef(0);
 
+  React.useEffect(() => {
+    setTaskId((current) => {
+      if (!tasks.length) return "";
+      return tasks.some((task) => task.task_id === current) ? current : tasks[0].task_id;
+    });
+  }, [tasks]);
+
+  React.useEffect(() => {
+    requestId.current += 1;
+    setResult(null);
+    setError(null);
+  }, [datasetId, taskId, episodeId]);
+
   async function search(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const trimmed = query.trim();
-    if (!trimmed) {
+    const trimmedEpisode = episodeId.trim();
+    if (!taskId || !trimmedEpisode) {
       requestId.current += 1;
       setResult(null);
       setError(null);
@@ -411,8 +426,9 @@ function EpisodeSearch({ datasetId }: { datasetId: string }) {
     setLoading(true);
     setError(null);
     try {
+      const query = `${taskId}/${trimmedEpisode}`;
       const data = await apiGet<Paged<Episode>>(
-        `/datasets/${encodeURIComponent(datasetId)}/episodes/search?q=${encodeURIComponent(trimmed)}&page_size=100`,
+        `/datasets/${encodeURIComponent(datasetId)}/episodes/search?q=${encodeURIComponent(query)}&page_size=100`,
       );
       if (currentRequest === requestId.current) {
         setResult(data);
@@ -431,10 +447,16 @@ function EpisodeSearch({ datasetId }: { datasetId: string }) {
   return (
     <div className="searchBlock">
       <form className="toolbar" onSubmit={search}>
+        <select value={taskId} onChange={(event) => setTaskId(event.target.value)} disabled={!tasks.length}>
+          {!tasks.length && <option value="">No tasks</option>}
+          {tasks.map((task) => (
+            <option value={task.task_id} key={task.task_id}>{task.task_id}</option>
+          ))}
+        </select>
         <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Find episode: 12, episode_000012, task_id/12, or dataset/task_id/12"
+          value={episodeId}
+          onChange={(event) => setEpisodeId(event.target.value)}
+          placeholder="Episode id: 12 or episode_000012"
         />
         <button type="submit">Find Episode</button>
       </form>

@@ -136,6 +136,14 @@ main {
   margin: 18px 0;
 }
 
+.searchBlock select {
+  max-width: min(480px, 100%);
+}
+
+.searchBlock input {
+  min-width: min(260px, 100%);
+}
+
 .searchSummary {
   margin: 0 0 8px;
 }
