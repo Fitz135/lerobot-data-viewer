@@ -215,17 +215,39 @@ def make_router(app_config: AppConfig) -> APIRouter:
     @router.get("/datasets/{dataset_id}/episodes/search")
     def search_episodes(
         dataset_id: str,
-        q: str = Query(..., min_length=1),
+        q: str | None = None,
         page_size: int = Query(default=50, ge=1, le=200),
     ) -> dict[str, Any]:
         dataset_or_404(dataset_id)
-        parsed = parse_episode_search_query(dataset_id, q)
-        if not parsed.dataset_matches or parsed.episode_index is None:
-            return {"items": [], "page": 1, "page_size": page_size, "total": 0}
-
         conn = conn_scope()
         try:
             generation_id = require_generation(conn, dataset_id)
+            trimmed = q.strip() if q else ""
+            if not trimmed:
+                total = conn.execute(
+                    "SELECT COUNT(*) AS count FROM episodes WHERE dataset_id = ? AND generation_id = ?",
+                    (dataset_id, generation_id),
+                ).fetchone()["count"]
+                rows = conn.execute(
+                    """
+                    SELECT * FROM episodes
+                    WHERE dataset_id = ? AND generation_id = ?
+                    ORDER BY task_id ASC, episode_index ASC
+                    LIMIT ?
+                    """,
+                    (dataset_id, generation_id, page_size),
+                ).fetchall()
+                return {
+                    "items": [decode_row(row_to_dict(row) or {}) for row in rows],
+                    "page": 1,
+                    "page_size": page_size,
+                    "total": total,
+                }
+
+            parsed = parse_episode_search_query(dataset_id, trimmed)
+            if not parsed.dataset_matches or parsed.episode_index is None:
+                return {"items": [], "page": 1, "page_size": page_size, "total": 0}
+
             where = ["dataset_id = ?", "generation_id = ?", "episode_index = ?"]
             params: list[Any] = [dataset_id, generation_id, parsed.episode_index]
             if parsed.task_id:

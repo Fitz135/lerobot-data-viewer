@@ -335,30 +335,71 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
 function EpisodeSearch({ datasetId }: { datasetId: string }) {
   const [query, setQuery] = React.useState("");
   const [result, setResult] = React.useState<Paged<Episode> | null>(null);
+  const [resultKind, setResultKind] = React.useState<"examples" | "search">("examples");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const requestId = React.useRef(0);
+
+  const loadExamples = React.useCallback(async () => {
+    const currentRequest = ++requestId.current;
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setResultKind("examples");
+    try {
+      const data = await apiGet<Paged<Episode>>(
+        `/datasets/${encodeURIComponent(datasetId)}/episodes/search?page_size=20`,
+      );
+      if (currentRequest === requestId.current) {
+        setResult(data);
+      }
+    } catch (err) {
+      if (currentRequest === requestId.current) {
+        setError((err as Error).message);
+      }
+    } finally {
+      if (currentRequest === requestId.current) {
+        setLoading(false);
+      }
+    }
+  }, [datasetId]);
+
+  React.useEffect(() => {
+    void loadExamples();
+  }, [loadExamples]);
 
   async function search(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = query.trim();
     if (!trimmed) {
-      setResult(null);
-      setError(null);
+      void loadExamples();
       return;
     }
+    const currentRequest = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
       const data = await apiGet<Paged<Episode>>(
         `/datasets/${encodeURIComponent(datasetId)}/episodes/search?q=${encodeURIComponent(trimmed)}&page_size=100`,
       );
-      setResult(data);
+      if (currentRequest === requestId.current) {
+        setResult(data);
+        setResultKind("search");
+      }
     } catch (err) {
-      setError((err as Error).message);
+      if (currentRequest === requestId.current) {
+        setError((err as Error).message);
+      }
     } finally {
-      setLoading(false);
+      if (currentRequest === requestId.current) {
+        setLoading(false);
+      }
     }
   }
+
+  const resultSummary = resultKind === "examples"
+    ? `Showing ${number(result?.items.length ?? 0)} example episodes`
+    : `${number(result?.total ?? 0)} matching episodes`;
 
   return (
     <div className="searchBlock">
@@ -374,7 +415,7 @@ function EpisodeSearch({ datasetId }: { datasetId: string }) {
       {error && <ErrorBox message={error} />}
       {result && (
         <div>
-          <div className="muted searchSummary">{number(result.total)} matching episodes</div>
+          <div className="muted searchSummary">{resultSummary}</div>
           <EpisodeTable datasetId={datasetId} episodes={result.items} showTask />
         </div>
       )}
