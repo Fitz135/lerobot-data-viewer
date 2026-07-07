@@ -63,6 +63,8 @@ credential flow. Do not commit the token contents.
 
 ## Documentation
 
+- [Code structure](docs/code-structure.md)
+- [Functional requirements](docs/functional-requirements.md)
 - [Design plan](docs/plan.md)
 - [Public frontend deployment](docs/public-frontend.md)
 - [Changelog](docs/changelog.md)
