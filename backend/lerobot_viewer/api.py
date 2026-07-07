@@ -193,6 +193,30 @@ def make_router(app_config: AppConfig) -> APIRouter:
         finally:
             conn.close()
 
+    @router.get("/datasets/{dataset_id}/task-summary")
+    def task_summary(dataset_id: str) -> dict[str, Any]:
+        dataset_or_404(dataset_id)
+        conn = conn_scope()
+        try:
+            generation_id = require_generation(conn, dataset_id)
+            rows = conn.execute(
+                """
+                SELECT task_id, task_text, episode_count
+                FROM tasks
+                WHERE dataset_id = ? AND generation_id = ?
+                ORDER BY task_id ASC
+                """,
+                (dataset_id, generation_id),
+            ).fetchall()
+            items = [row_to_dict(row) or {} for row in rows]
+            return {
+                "items": items,
+                "total": len(items),
+                "episode_total": sum(int(item["episode_count"]) for item in items),
+            }
+        finally:
+            conn.close()
+
     @router.get("/datasets/{dataset_id}/tasks/{task_id}")
     def task_detail(dataset_id: str, task_id: str) -> dict[str, Any]:
         dataset_or_404(dataset_id)
@@ -215,35 +239,14 @@ def make_router(app_config: AppConfig) -> APIRouter:
     @router.get("/datasets/{dataset_id}/episodes/search")
     def search_episodes(
         dataset_id: str,
-        q: str | None = None,
+        q: str = Query(..., min_length=1),
         page_size: int = Query(default=50, ge=1, le=200),
     ) -> dict[str, Any]:
         dataset_or_404(dataset_id)
         conn = conn_scope()
         try:
             generation_id = require_generation(conn, dataset_id)
-            trimmed = q.strip() if q else ""
-            if not trimmed:
-                total = conn.execute(
-                    "SELECT COUNT(*) AS count FROM episodes WHERE dataset_id = ? AND generation_id = ?",
-                    (dataset_id, generation_id),
-                ).fetchone()["count"]
-                rows = conn.execute(
-                    """
-                    SELECT * FROM episodes
-                    WHERE dataset_id = ? AND generation_id = ?
-                    ORDER BY task_id ASC, episode_index ASC
-                    LIMIT ?
-                    """,
-                    (dataset_id, generation_id, page_size),
-                ).fetchall()
-                return {
-                    "items": [decode_row(row_to_dict(row) or {}) for row in rows],
-                    "page": 1,
-                    "page_size": page_size,
-                    "total": total,
-                }
-
+            trimmed = q.strip()
             parsed = parse_episode_search_query(dataset_id, trimmed)
             if not parsed.dataset_matches or parsed.episode_index is None:
                 return {"items": [], "page": 1, "page_size": page_size, "total": 0}

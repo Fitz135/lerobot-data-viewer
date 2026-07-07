@@ -140,6 +140,34 @@ main {
   margin: 0 0 8px;
 }
 
+.globalInfo {
+  margin: 18px 0;
+}
+
+.subsectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.tableScroll {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.compactTable th,
+.compactTable td {
+  padding: 8px 10px;
+}
+
+.compactTable th:last-child,
+.compactTable td:last-child {
+  width: 140px;
+  text-align: right;
+}
+
 .breadcrumb {
   display: flex;
   gap: 8px;

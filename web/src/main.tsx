@@ -12,6 +12,7 @@ import type {
   IndexRuns,
   Paged,
   Task,
+  TaskSummary,
   Timeseries,
   VideoRow,
 } from "./types";
@@ -236,6 +237,7 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
   const [issue, setIssue] = React.useState("any");
   const [refreshWatch, setRefreshWatch] = React.useState<{ previousRunId: number | null; activeRunId: number | null } | null>(null);
   const detail = useApi<Dataset>(`/datasets/${encodeURIComponent(datasetId)}`, [datasetId]);
+  const taskSummary = useApi<TaskSummary>(`/datasets/${encodeURIComponent(datasetId)}/task-summary`, [datasetId]);
   const tasks = useApi<Paged<Task>>(
     `/datasets/${encodeURIComponent(datasetId)}/tasks?search=${encodeURIComponent(search)}&issue=${issue}&page_size=100`,
     [datasetId, search, issue],
@@ -265,6 +267,7 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
     if (activeRunId !== null && latestRun.id === activeRunId && latestRun.status !== "running") {
       setRefreshWatch(null);
       detail.reload();
+      taskSummary.reload();
       tasks.reload();
     }
   }, [refreshWatch, latestRun?.id, latestRun?.status]);
@@ -314,6 +317,12 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
       <RefreshPanel runs={runs.data} />
       {active && (
         <>
+          <DatasetGlobalInfo
+            datasetId={datasetId}
+            summary={taskSummary.data}
+            loading={taskSummary.loading}
+            error={taskSummary.error}
+          />
           <EpisodeSearch datasetId={datasetId} />
           <div className="toolbar">
             <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search task or description" />
@@ -332,47 +341,70 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
   );
 }
 
+function DatasetGlobalInfo({
+  datasetId,
+  summary,
+  loading,
+  error,
+}: {
+  datasetId: string;
+  summary: TaskSummary | null;
+  loading: boolean;
+  error: string | null;
+}) {
+  return (
+    <div className="globalInfo">
+      <div className="subsectionHeader">
+        <h2>Global Info</h2>
+        {summary && (
+          <div className="muted">
+            {number(summary.total)} tasks / {number(summary.episode_total)} episodes
+          </div>
+        )}
+      </div>
+      {loading && <Loading />}
+      {error && <ErrorBox message={error} />}
+      {summary && (
+        <div className="tableScroll">
+          <table className="dataTable compactTable">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Episodes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.items.map((task) => (
+                <tr key={task.task_id}>
+                  <td>
+                    <a href={href(["datasets", datasetId, "tasks", task.task_id])}>{task.task_id}</a>
+                    {task.task_text && <div className="description">{task.task_text}</div>}
+                  </td>
+                  <td>{number(task.episode_count)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EpisodeSearch({ datasetId }: { datasetId: string }) {
   const [query, setQuery] = React.useState("");
   const [result, setResult] = React.useState<Paged<Episode> | null>(null);
-  const [resultKind, setResultKind] = React.useState<"examples" | "search">("examples");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const requestId = React.useRef(0);
-
-  const loadExamples = React.useCallback(async () => {
-    const currentRequest = ++requestId.current;
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    setResultKind("examples");
-    try {
-      const data = await apiGet<Paged<Episode>>(
-        `/datasets/${encodeURIComponent(datasetId)}/episodes/search?page_size=20`,
-      );
-      if (currentRequest === requestId.current) {
-        setResult(data);
-      }
-    } catch (err) {
-      if (currentRequest === requestId.current) {
-        setError((err as Error).message);
-      }
-    } finally {
-      if (currentRequest === requestId.current) {
-        setLoading(false);
-      }
-    }
-  }, [datasetId]);
-
-  React.useEffect(() => {
-    void loadExamples();
-  }, [loadExamples]);
 
   async function search(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = query.trim();
     if (!trimmed) {
-      void loadExamples();
+      requestId.current += 1;
+      setResult(null);
+      setError(null);
       return;
     }
     const currentRequest = ++requestId.current;
@@ -384,7 +416,6 @@ function EpisodeSearch({ datasetId }: { datasetId: string }) {
       );
       if (currentRequest === requestId.current) {
         setResult(data);
-        setResultKind("search");
       }
     } catch (err) {
       if (currentRequest === requestId.current) {
@@ -396,10 +427,6 @@ function EpisodeSearch({ datasetId }: { datasetId: string }) {
       }
     }
   }
-
-  const resultSummary = resultKind === "examples"
-    ? `Showing ${number(result?.items.length ?? 0)} example episodes`
-    : `${number(result?.total ?? 0)} matching episodes`;
 
   return (
     <div className="searchBlock">
@@ -415,7 +442,7 @@ function EpisodeSearch({ datasetId }: { datasetId: string }) {
       {error && <ErrorBox message={error} />}
       {result && (
         <div>
-          <div className="muted searchSummary">{resultSummary}</div>
+          <div className="muted searchSummary">{number(result.total)} matching episodes</div>
           <EpisodeTable datasetId={datasetId} episodes={result.items} showTask />
         </div>
       )}

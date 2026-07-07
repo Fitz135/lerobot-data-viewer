@@ -40,6 +40,21 @@ make frontend-build-public \
   PUBLIC_BASE_PATH=/
 ```
 
+## Update Rule
+
+After every feature update, commit and push the source changes to `main`.
+Frontend-visible changes must also be rebuilt with `make frontend-build-public`
+and pushed to the `gh-pages` branch.
+
+The local GitHub token for HTTPS pushes is stored at:
+
+```text
+/inspire/qb-ilm/project/semantic-visual-tokenizer/lutianyi-253108120107/git_token_classic_0706.txt
+```
+
+Use the token through a temporary `GIT_ASKPASS` helper or another non-echoing
+credential flow. Do not commit the token contents.
+
 ## Start Backend For Public Frontend
 
 Run the backend with CORS allowing your GitHub Pages origin:

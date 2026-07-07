@@ -37,6 +37,18 @@ export interface Task {
   schema: Record<string, unknown>;
 }
 
+export interface TaskEpisodeSummary {
+  task_id: string;
+  task_text: string | null;
+  episode_count: number;
+}
+
+export interface TaskSummary {
+  items: TaskEpisodeSummary[];
+  total: number;
+  episode_total: number;
+}
+
 export interface Episode {
   dataset_id: string;
   generation_id: number;
@@ -117,4 +129,3 @@ export interface IndexRuns {
   runs: IndexRun[];
   events: Array<Record<string, unknown>>;
 }
-

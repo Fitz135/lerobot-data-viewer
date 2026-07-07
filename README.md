@@ -46,6 +46,21 @@ make index        # Deep-index all registered data
 make test         # Backend tests and frontend build
 ```
 
+## Maintenance Workflow
+
+After each feature update, commit and push the source changes to `main`. If the
+update changes the frontend, also rebuild the public frontend and push the
+generated static files to `gh-pages`.
+
+The local GitHub token for HTTPS pushes is stored at:
+
+```text
+/inspire/qb-ilm/project/semantic-visual-tokenizer/lutianyi-253108120107/git_token_classic_0706.txt
+```
+
+Use the token through a temporary `GIT_ASKPASS` helper or another non-echoing
+credential flow. Do not commit the token contents.
+
 ## Documentation
 
 - [Design plan](docs/plan.md)
