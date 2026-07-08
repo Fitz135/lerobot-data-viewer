@@ -2,6 +2,9 @@ datasets:
   - id: rdt_lerobot_v21
     name: RDT LeRobot v2.1
     root: /inspire/qb-ilm/project/semantic-visual-tokenizer/public/wam/data_processed/rdt_lerobot_v21
+  - id: intern_data_a1
+    name: Intern Data A1
+    root: /inspire/qb-ilm/project/semantic-visual-tokenizer/public/wam/data_processed/intern_data_a1
 
 index:
   parquet_workers: 4

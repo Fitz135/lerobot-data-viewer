@@ -3,9 +3,10 @@
 ## Goal
 
 Build a local read-only visualization tool for LeRobot v2.1 training data.
-The first registered dataset is:
+Registered datasets include:
 
-`/inspire/qb-ilm/project/semantic-visual-tokenizer/public/wam/data_processed/rdt_lerobot_v21`
+- `/inspire/qb-ilm/project/semantic-visual-tokenizer/public/wam/data_processed/rdt_lerobot_v21`
+- `/inspire/qb-ilm/project/semantic-visual-tokenizer/public/wam/data_processed/intern_data_a1`
 
 The tool must support both macro dashboard inspection and episode-level quality
 inspection.
@@ -33,7 +34,8 @@ Stable public identity uses:
 
 ```text
 dataset_id = registry dataset id
-task_id = LeRobot task directory name
+task_id = LeRobot task directory name, or a route-safe id derived from the task
+          directory relative path for grouped roots
 episode_index = LeRobot episode index
 episode_uid = dataset_id/task_id/episode_index
 ```

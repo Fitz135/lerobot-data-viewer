@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-08
+
+### Added
+
+- Registered `intern_data_a1` as a second dataset root.
+- Added task discovery for LeRobot roots grouped one level below category
+  directories such as `real/` and `sim/`.
+
 ## 2026-07-06
 
 ### Added

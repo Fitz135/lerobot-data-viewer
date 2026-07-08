@@ -37,9 +37,11 @@ Generated/runtime data:
   `LDRV_DB_PATH`, and enforces registered dataset-root path checks.
 - `db.py` owns SQLite connection setup, schema creation, JSON helpers, dataset
   registration, and active-generation lookup.
-- `indexer.py` scans registered LeRobot v2.1 task directories, reads metadata
-  and parquet summaries, probes videos with `ffprobe`, writes health checks,
-  aggregates task/dataset stats, and activates successful generations.
+- `indexer.py` discovers registered LeRobot v2.1 task directories from either
+  flat dataset roots or one-level grouped roots such as `real/` and `sim/`,
+  reads metadata and parquet summaries, probes videos with `ffprobe`, writes
+  health checks, aggregates task/dataset stats, and activates successful
+  generations.
 - `timeseries.py` reads per-episode parquet frame, timestamp, state, and action
   series with optional downsampling.
 - `stats.py` computes numeric summaries for state/action matrices.
@@ -117,5 +119,6 @@ Current hash routes:
 - stats and timeseries shape
 - episode search parsing and lookup behavior
 - dataset task summary behavior
+- flat and grouped LeRobot task directory discovery
 
 `make test` runs `uv run pytest` and the frontend TypeScript/Vite build.

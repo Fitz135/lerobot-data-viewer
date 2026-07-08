@@ -12,6 +12,11 @@ Local read-only dashboard and episode browser for LeRobot v2.1 datasets.
 - Read-only health checks for metadata, parquet, video, and numeric series.
 - Public static frontend on GitHub Pages with runtime API URL configuration.
 
+## Registered Datasets
+
+- `rdt_lerobot_v21`
+- `intern_data_a1`
+
 ## Quick Start
 
 ```bash

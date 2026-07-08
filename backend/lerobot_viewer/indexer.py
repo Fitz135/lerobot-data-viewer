@@ -518,6 +518,36 @@ def task_text_for_episode(episode: dict[str, Any], task_map: dict[int, str]) -> 
     return next(iter(task_map.values()), None)
 
 
+def is_task_root(path: Path) -> bool:
+    meta = path / "meta"
+    return (meta / "info.json").is_file() and (meta / "episodes.jsonl").is_file()
+
+
+def discover_task_dirs(dataset_root: Path) -> list[Path]:
+    task_dirs: list[Path] = []
+    for first_level in sorted(
+        path for path in dataset_root.iterdir()
+        if path.is_dir() and not path.name.startswith("_")
+    ):
+        if is_task_root(first_level):
+            task_dirs.append(first_level)
+            continue
+        for second_level in sorted(
+            path for path in first_level.iterdir()
+            if path.is_dir() and not path.name.startswith("_")
+        ):
+            if is_task_root(second_level):
+                task_dirs.append(second_level)
+    return task_dirs
+
+
+def task_id_for_root(dataset_root: Path, task_root: Path) -> str:
+    parts = task_root.relative_to(dataset_root).parts
+    if len(parts) == 1:
+        return parts[0]
+    return "__".join(parts)
+
+
 def write_scan_results(
     conn: Any,
     dataset: DatasetConfig,
@@ -729,10 +759,7 @@ def index_dataset(
         if not dataset.root.exists():
             raise FileNotFoundError(f"Dataset root does not exist: {dataset.root}")
 
-        task_dirs = sorted(
-            path for path in dataset.root.iterdir()
-            if path.is_dir() and not path.name.startswith("_")
-        )
+        task_dirs = discover_task_dirs(dataset.root)
         if max_tasks is not None:
             task_dirs = task_dirs[:max_tasks]
         update_run(conn, run_id, phase="metadata", total_items=len(task_dirs), processed_items=0)
@@ -740,9 +767,10 @@ def index_dataset(
         jobs: list[EpisodeJob] = []
         task_infos: dict[str, dict[str, Any]] = {}
         for processed, task_root in enumerate(task_dirs, start=1):
+            task_id = task_id_for_root(dataset.root, task_root)
             try:
                 info, episodes, task_map = read_task_metadata(task_root)
-                task_infos[task_root.name] = info
+                task_infos[task_id] = info
                 if max_episodes_per_task is not None:
                     episodes = episodes[:max_episodes_per_task]
                 cameras = video_keys(info)
@@ -750,7 +778,7 @@ def index_dataset(
                     jobs.append(
                         EpisodeJob(
                             dataset=dataset,
-                            task_id=task_root.name,
+                            task_id=task_id,
                             task_root=task_root,
                             info=info,
                             episode=episode,
@@ -773,13 +801,13 @@ def index_dataset(
                     (
                         dataset.id,
                         generation_id,
-                        task_root.name,
+                        task_id,
                         f"Failed to read task metadata: {exc}",
                         str(task_root),
                         json_dump({"traceback": traceback.format_exc(limit=2)}),
                     ),
                 )
-                insert_run_event(conn, run_id, "error", f"Failed metadata for {task_root.name}: {exc}", str(task_root))
+                insert_run_event(conn, run_id, "error", f"Failed metadata for {task_id}: {exc}", str(task_root))
             update_run(conn, run_id, processed_items=processed, total_items=len(task_dirs))
 
         update_run(conn, run_id, phase="episodes", processed_items=0, total_items=len(jobs))

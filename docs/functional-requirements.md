@@ -9,13 +9,12 @@ Update it whenever a code change adds, removes, or changes behavior.
 LeRobot Data Viewer is a local, read-only dashboard and episode browser for
 registered LeRobot v2.1 datasets.
 
-The first registered dataset is:
+Registered datasets are configured in `config/datasets.yaml` and currently include:
 
 ```text
 rdt_lerobot_v21
+intern_data_a1
 ```
-
-with its root configured in `config/datasets.yaml`.
 
 ## Core Requirements
 
@@ -94,6 +93,8 @@ must return an empty result set rather than a different dataset's episode.
 Indexing must:
 
 - Read task metadata from LeRobot task directories.
+- Discover task directories that are either direct children of a registered root
+  or one level below grouping directories such as `real/` and `sim/`.
 - Read parquet summaries for required columns: `frame_index`, `timestamp`,
   `observation.state`, and `action`.
 - Probe videos with `ffprobe`.
