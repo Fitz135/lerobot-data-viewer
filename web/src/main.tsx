@@ -166,11 +166,13 @@ function GlobalDashboard() {
       acc.episodes += item.episode_count ?? 0;
       acc.frames += item.frame_count ?? 0;
       acc.videos += item.video_count ?? 0;
+      acc.episodeDuration += item.duration_sec ?? 0;
+      acc.videoDuration += item.video_duration_sec ?? 0;
       acc.errors += item.error_count ?? 0;
       acc.warnings += item.warning_count ?? 0;
       return acc;
     },
-    { tasks: 0, episodes: 0, frames: 0, videos: 0, errors: 0, warnings: 0 },
+    { tasks: 0, episodes: 0, frames: 0, videos: 0, episodeDuration: 0, videoDuration: 0, errors: 0, warnings: 0 },
   );
   return (
     <section>
@@ -187,6 +189,8 @@ function GlobalDashboard() {
           ["Episodes", number(totals.episodes)],
           ["Frames", number(totals.frames)],
           ["Videos", number(totals.videos)],
+          ["Episode Duration", seconds(totals.episodeDuration)],
+          ["Video Duration", seconds(totals.videoDuration)],
           ["Errors", number(totals.errors)],
           ["Warnings", number(totals.warnings)],
         ]}
@@ -199,6 +203,8 @@ function GlobalDashboard() {
             <th>Episodes</th>
             <th>Frames</th>
             <th>Videos</th>
+            <th>Episode Duration</th>
+            <th>Video Duration</th>
             <th>Issues</th>
             <th>Indexed</th>
             <th>Root</th>
@@ -212,6 +218,8 @@ function GlobalDashboard() {
               <td>{number(dataset.episode_count)}</td>
               <td>{number(dataset.frame_count)}</td>
               <td>{number(dataset.video_count)}</td>
+              <td>{seconds(dataset.duration_sec)}</td>
+              <td>{seconds(dataset.video_duration_sec)}</td>
               <td><IssueText error={dataset.error_count} warning={dataset.warning_count} /></td>
               <td>{dataset.last_indexed_at ? dataset.last_indexed_at : "not indexed"}</td>
               <td className={dataset.root_exists ? "muted" : "bad"}>{dataset.root}</td>
@@ -310,7 +318,8 @@ function DatasetDetail({ datasetId }: { datasetId: string }) {
           ["Episodes", number(dataset.episode_count)],
           ["Frames", number(dataset.frame_count)],
           ["Videos", number(dataset.video_count)],
-          ["Duration", seconds(dataset.duration_sec)],
+          ["Episode Duration", seconds(dataset.duration_sec)],
+          ["Video Duration", seconds(dataset.video_duration_sec)],
           ["Errors", number(dataset.error_count)],
           ["Warnings", number(dataset.warning_count)],
         ]}
@@ -546,6 +555,8 @@ function TaskDetail({ datasetId, taskId }: { datasetId: string; taskId: string }
           ["Episodes", number(item.episode_count)],
           ["Frames", number(item.frame_count)],
           ["Videos", number(item.video_count)],
+          ["Episode Duration", seconds(item.duration_sec)],
+          ["Video Duration", seconds(item.video_duration_sec)],
           ["p50 length", number(Math.round(item.p50_length ?? 0))],
           ["p95 length", number(Math.round(item.p95_length ?? 0))],
           ["Errors", number(item.error_count)],

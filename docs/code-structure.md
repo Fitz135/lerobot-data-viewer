@@ -31,8 +31,8 @@ Generated/runtime data:
 - `main.py` creates the FastAPI app, configures CORS from
   `LDRV_CORS_ORIGINS`, and mounts the API router.
 - `api.py` defines all `/api` endpoints, request parsing, dataset/task/episode
-  lookup, index refresh triggering, timeseries loading, and Range video
-  streaming.
+  lookup, index refresh triggering, timeseries loading, per-file video-duration
+  aggregation from `episode_videos`, and Range video streaming.
 - `config.py` loads `config/datasets.yaml`, supports `LDRV_CONFIG` and
   `LDRV_DB_PATH`, and enforces registered dataset-root path checks.
 - `db.py` owns SQLite connection setup, schema creation, JSON helpers, dataset

@@ -10,6 +10,7 @@ export interface Dataset {
   frame_count?: number | null;
   video_count?: number | null;
   duration_sec?: number | null;
+  video_duration_sec?: number | null;
   error_count?: number | null;
   warning_count?: number | null;
   info_count?: number | null;
@@ -26,6 +27,7 @@ export interface Task {
   frame_count: number;
   video_count: number;
   duration_sec: number;
+  video_duration_sec?: number | null;
   min_length: number | null;
   p50_length: number | null;
   p95_length: number | null;

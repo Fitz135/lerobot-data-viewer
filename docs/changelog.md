@@ -7,6 +7,8 @@
 - Registered `intern_data_a1` as a second dataset root.
 - Added task discovery for LeRobot roots grouped one level below category
   directories such as `real/` and `sim/`.
+- Added `video_duration_sec` to dataset and task API responses so UI can
+  distinguish episode duration from summed mp4 duration.
 
 ## 2026-07-06
 

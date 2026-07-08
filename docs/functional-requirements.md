@@ -34,14 +34,15 @@ intern_data_a1
 Global dashboard:
 
 - Show all registered datasets.
-- Show aggregate dataset, task, episode, frame, video, error, and warning
-  counts.
+- Show aggregate dataset, task, episode, frame, video, episode-duration,
+  video-duration, error, and warning counts.
 - Link each dataset to its dataset detail page.
 
 Dataset detail:
 
 - Show dataset root and root existence state.
-- Show task, episode, frame, video, duration, error, and warning totals.
+- Show task, episode, frame, video, episode-duration, video-duration, error,
+  and warning totals.
 - Show recent index run status and progress.
 - Provide `Smoke Refresh` and `Full Refresh` actions.
 - Poll only for a user-triggered refresh and stop after the tracked run
@@ -99,6 +100,7 @@ Indexing must:
   `observation.state`, and `action`.
 - Probe videos with `ffprobe`.
 - Store dataset, task, episode, video, and health-check summaries in SQLite.
+- Report episode duration separately from summed per-file video duration.
 - Aggregate state/action statistics at episode, task, and dataset levels.
 - Record index run progress and recent index events.
 

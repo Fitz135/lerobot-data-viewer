@@ -75,6 +75,34 @@ def make_router(app_config: AppConfig) -> APIRouter:
                 decoded[key[:-5]] = json_load(decoded.pop(key), {})
         return decoded
 
+    def video_duration_sec(
+        conn: Any,
+        dataset_id: str,
+        generation_id: int | None,
+        task_id: str | None = None,
+    ) -> float | None:
+        if generation_id is None:
+            return None
+        if task_id is None:
+            row = conn.execute(
+                """
+                SELECT COALESCE(SUM(duration_sec), 0) AS duration_sec
+                FROM episode_videos
+                WHERE dataset_id = ? AND generation_id = ? AND duration_sec IS NOT NULL
+                """,
+                (dataset_id, generation_id),
+            ).fetchone()
+        else:
+            row = conn.execute(
+                """
+                SELECT COALESCE(SUM(duration_sec), 0) AS duration_sec
+                FROM episode_videos
+                WHERE dataset_id = ? AND generation_id = ? AND task_id = ? AND duration_sec IS NOT NULL
+                """,
+                (dataset_id, generation_id, task_id),
+            ).fetchone()
+        return float(row["duration_sec"] or 0.0)
+
     def get_episode_row(conn: Any, dataset_id: str, task_id: str, episode_index: int) -> tuple[int, dict[str, Any]]:
         generation_id = require_generation(conn, dataset_id)
         row = conn.execute(
@@ -113,6 +141,7 @@ def make_router(app_config: AppConfig) -> APIRouter:
             for row in rows:
                 item = row_to_dict(row) or {}
                 item["root_exists"] = Path(item["root"]).exists()
+                item["video_duration_sec"] = video_duration_sec(conn, item["id"], item.get("active_generation_id"))
                 datasets.append(item)
             return {"datasets": datasets}
         finally:
@@ -137,6 +166,7 @@ def make_router(app_config: AppConfig) -> APIRouter:
                 raise HTTPException(status_code=404, detail="Dataset not found")
             item = decode_row(row_to_dict(row) or {})
             item["root_exists"] = dataset.root.exists()
+            item["video_duration_sec"] = video_duration_sec(conn, dataset_id, item.get("active_generation_id"))
             return item
         finally:
             conn.close()
@@ -184,8 +214,11 @@ def make_router(app_config: AppConfig) -> APIRouter:
                 """,
                 params + [page_size, (page - 1) * page_size],
             ).fetchall()
+            items = [decode_row(row_to_dict(row) or {}) for row in rows]
+            for item in items:
+                item["video_duration_sec"] = video_duration_sec(conn, dataset_id, generation_id, item["task_id"])
             return {
-                "items": [decode_row(row_to_dict(row) or {}) for row in rows],
+                "items": items,
                 "page": page,
                 "page_size": page_size,
                 "total": total,
@@ -232,7 +265,9 @@ def make_router(app_config: AppConfig) -> APIRouter:
             ).fetchone()
             if row is None:
                 raise HTTPException(status_code=404, detail="Task not found")
-            return decode_row(row_to_dict(row) or {})
+            item = decode_row(row_to_dict(row) or {})
+            item["video_duration_sec"] = video_duration_sec(conn, dataset_id, generation_id, task_id)
+            return item
         finally:
             conn.close()
 
