@@ -67,6 +67,10 @@ def video_keys(info: dict[str, Any]) -> list[str]:
     )
 
 
+STATE_FEATURE_PREFIXES = ("observation.state", "observation.states.", "states.")
+ACTION_FEATURE_PREFIXES = ("action", "actions.", "master_actions.")
+
+
 def feature_names(info: dict[str, Any], key: str) -> list[str]:
     feature = info.get("features", {}).get(key, {}) or {}
     names = feature.get("names")
@@ -78,13 +82,36 @@ def feature_names(info: dict[str, Any], key: str) -> list[str]:
     return []
 
 
+def feature_key_matches(key: str, prefixes: tuple[str, ...]) -> bool:
+    return any(key.startswith(prefix) if prefix.endswith(".") else key == prefix for prefix in prefixes)
+
+
+def feature_specs(info: dict[str, Any], prefixes: tuple[str, ...]) -> list[tuple[str, list[str]]]:
+    specs: list[tuple[str, list[str]]] = []
+    for key, feature in (info.get("features") or {}).items():
+        if not isinstance(feature, dict) or feature.get("dtype") == "video":
+            continue
+        if feature_key_matches(key, prefixes):
+            specs.append((key, feature_names(info, key)))
+    return specs
+
+
+def feature_map(info: dict[str, Any], specs: list[tuple[str, list[str]]]) -> dict[str, Any]:
+    features = info.get("features", {})
+    return {key: features[key] for key, _ in specs}
+
+
 def schema_summary(info: dict[str, Any]) -> dict[str, Any]:
     features = info.get("features", {})
+    state_specs = feature_specs(info, STATE_FEATURE_PREFIXES)
+    action_specs = feature_specs(info, ACTION_FEATURE_PREFIXES)
     return {
         "robot_type": info.get("robot_type"),
         "fps": info.get("fps"),
         "state": features.get("observation.state"),
         "action": features.get("action"),
+        "state_features": feature_map(info, state_specs),
+        "action_features": feature_map(info, action_specs),
         "videos": {key: features[key] for key in video_keys(info)},
     }
 
@@ -149,17 +176,49 @@ def column_pylist(table: Any, name: str) -> list[Any]:
     return table.column(name).to_pylist()
 
 
+def prefixed_feature_names(specs: list[tuple[str, list[str]]], rows: list[list[float]]) -> list[str]:
+    names: list[str] = []
+    for key, feature_names_for_key in specs:
+        names.extend(f"{key}.{name}" for name in feature_names_for_key)
+    width = len(rows[0]) if rows else len(names)
+    if len(names) != width:
+        return [f"dim_{idx}" for idx in range(width)]
+    return names
+
+
+def feature_matrix(table: Any, specs: list[tuple[str, list[str]]]) -> list[list[float]]:
+    if not specs:
+        return []
+    columns = [column_pylist(table, key) for key, _ in specs]
+    row_count = len(columns[0]) if columns else 0
+    rows: list[list[float]] = []
+    for row_idx in range(row_count):
+        row: list[float] = []
+        for values in columns:
+            value = values[row_idx]
+            if isinstance(value, list):
+                row.extend(float(item) for item in value)
+            else:
+                row.append(float(value))
+        rows.append(row)
+    return rows
+
+
 def read_parquet_summary(
     path: Path,
-    state_names: list[str],
-    action_names: list[str],
+    state_specs: list[tuple[str, list[str]]],
+    action_specs: list[tuple[str, list[str]]],
     extreme_abs_value: float,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     checks: list[dict[str, Any]] = []
     pf = pq.ParquetFile(path)
     row_count = int(pf.metadata.num_rows)
     columns = set(pf.schema_arrow.names)
-    required = ["observation.state", "action", "frame_index", "timestamp"]
+    required = list(dict.fromkeys(
+        ["frame_index", "timestamp"]
+        + [key for key, _ in state_specs]
+        + [key for key, _ in action_specs]
+    ))
     missing = [name for name in required if name not in columns]
     if missing:
         checks.append(
@@ -184,12 +243,14 @@ def read_parquet_summary(
     table = pq.read_table(path, columns=required)
     frame_values = [int(item) for item in column_pylist(table, "frame_index")]
     timestamp_values = [float(item) for item in column_pylist(table, "timestamp")]
-    state_rows = column_pylist(table, "observation.state")
-    action_rows = column_pylist(table, "action")
+    state_rows = feature_matrix(table, state_specs)
+    action_rows = feature_matrix(table, action_specs)
+    state_names = prefixed_feature_names(state_specs, state_rows)
+    action_names = prefixed_feature_names(action_specs, action_rows)
     state_stats = compute_matrix_stats(state_rows, state_names, extreme_abs_value).to_dict()
     action_stats = compute_matrix_stats(action_rows, action_names, extreme_abs_value).to_dict()
 
-    for label, stats in (("observation.state", state_stats), ("action", action_stats)):
+    for label, stats in (("state features", state_stats), ("action features", action_stats)):
         if stats.get("nan_count", 0) or stats.get("inf_count", 0):
             checks.append(
                 health(
@@ -263,8 +324,8 @@ class EpisodeJob:
     episode: dict[str, Any]
     task_text: str | None
     camera_keys: list[str]
-    state_names: list[str]
-    action_names: list[str]
+    state_specs: list[tuple[str, list[str]]]
+    action_specs: list[tuple[str, list[str]]]
     index_config: Any
 
 
@@ -300,8 +361,8 @@ def scan_episode(job: EpisodeJob) -> EpisodeResult:
         try:
             parquet_summary, parquet_checks = read_parquet_summary(
                 parquet_path,
-                job.state_names,
-                job.action_names,
+                job.state_specs,
+                job.action_specs,
                 job.index_config.extreme_abs_value,
             )
             checks.extend(parquet_checks)
@@ -784,8 +845,8 @@ def index_dataset(
                             episode=episode,
                             task_text=task_text_for_episode(episode, task_map),
                             camera_keys=cameras,
-                            state_names=feature_names(info, "observation.state"),
-                            action_names=feature_names(info, "action"),
+                            state_specs=feature_specs(info, STATE_FEATURE_PREFIXES),
+                            action_specs=feature_specs(info, ACTION_FEATURE_PREFIXES),
                             index_config=app_config.index,
                         )
                     )

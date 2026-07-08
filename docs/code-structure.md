@@ -39,11 +39,11 @@ Generated/runtime data:
   registration, and active-generation lookup.
 - `indexer.py` discovers registered LeRobot v2.1 task directories from either
   flat dataset roots or one-level grouped roots such as `real/` and `sim/`,
-  reads metadata and parquet summaries, probes videos with `ffprobe`, writes
-  health checks, aggregates task/dataset stats, and activates successful
-  generations.
-- `timeseries.py` reads per-episode parquet frame, timestamp, state, and action
-  series with optional downsampling.
+  reads metadata and parquet summaries using task-local `meta/info.json`
+  state/action schemas, probes videos with `ffprobe`, writes health checks,
+  aggregates task/dataset stats, and activates successful generations.
+- `timeseries.py` reads per-episode parquet frame, timestamp, and dynamic
+  state/action feature series with optional downsampling.
 - `stats.py` computes numeric summaries for state/action matrices.
 - `identity.py` builds and parses stable `dataset_id/task_id/episode_index`
   episode identifiers.

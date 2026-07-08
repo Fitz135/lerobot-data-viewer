@@ -96,8 +96,9 @@ Indexing must:
 - Read task metadata from LeRobot task directories.
 - Discover task directories that are either direct children of a registered root
   or one level below grouping directories such as `real/` and `sim/`.
-- Read parquet summaries for required columns: `frame_index`, `timestamp`,
-  `observation.state`, and `action`.
+- Read parquet summaries for required timing columns `frame_index` and
+  `timestamp`, plus state/action numeric feature columns declared in each
+  task's `meta/info.json`.
 - Probe videos with `ffprobe`.
 - Store dataset, task, episode, video, and health-check summaries in SQLite.
 - Report episode duration separately from summed per-file video duration.
@@ -109,7 +110,7 @@ Health checks must cover:
 - missing metadata, parquet, or video files
 - parquet read failures
 - parquet row count mismatch
-- missing required parquet columns
+- missing required parquet columns from the task-local `meta/info.json` schema
 - NaN/Inf in state/action
 - all-zero or all-constant state/action values
 - constant state/action dimensions

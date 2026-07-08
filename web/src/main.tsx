@@ -241,6 +241,14 @@ function IssueText({ error, warning, info }: { error?: number | null; warning?: 
   );
 }
 
+function isStateSeriesKey(key: string): boolean {
+  return key.startsWith("observation.state.") || key.startsWith("observation.states.") || key.startsWith("states.");
+}
+
+function isActionSeriesKey(key: string): boolean {
+  return key.startsWith("action.") || key.startsWith("actions.") || key.startsWith("master_actions.");
+}
+
 function DatasetDetail({ datasetId }: { datasetId: string }) {
   const [search, setSearch] = React.useState("");
   const [issue, setIssue] = React.useState("any");
@@ -701,8 +709,8 @@ function EpisodeBrowser({ datasetId, taskId, episodeIndex }: { datasetId: string
   if (detail.error) return <ErrorBox message={detail.error} />;
   if (!episode) return null;
   const timeSeriesData = timeseries.data;
-  const stateKeys = timeSeriesData ? Object.keys(timeSeriesData.series).filter((key) => key.startsWith("observation.state.")) : [];
-  const actionKeys = timeSeriesData ? Object.keys(timeSeriesData.series).filter((key) => key.startsWith("action.")) : [];
+  const stateKeys = timeSeriesData ? Object.keys(timeSeriesData.series).filter(isStateSeriesKey) : [];
+  const actionKeys = timeSeriesData ? Object.keys(timeSeriesData.series).filter(isActionSeriesKey) : [];
   return (
     <section>
       <Breadcrumb
@@ -761,7 +769,7 @@ function EpisodeBrowser({ datasetId, taskId, episodeIndex }: { datasetId: string
                   Timeseries is downsampled from {number(timeSeriesData.source_length)} frames for browser performance.
                 </div>
               )}
-              <TimeSeriesPlot title="observation.state" data={timeSeriesData} keys={stateKeys} frame={frame} />
+              <TimeSeriesPlot title="state" data={timeSeriesData} keys={stateKeys} frame={frame} />
               <TimeSeriesPlot title="action" data={timeSeriesData} keys={actionKeys} frame={frame} />
             </>
           )}

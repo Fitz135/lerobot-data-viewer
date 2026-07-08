@@ -9,6 +9,9 @@
   directories such as `real/` and `sim/`.
 - Added `video_duration_sec` to dataset and task API responses so UI can
   distinguish episode duration from summed mp4 duration.
+- Switched state/action parquet validation and timeseries loading from fixed
+  `observation.state` / `action` columns to task-local `meta/info.json`
+  schemas, fixing false `missing_parquet_columns` errors for `intern_data_a1`.
 
 ## 2026-07-06
 

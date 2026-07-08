@@ -103,6 +103,29 @@ def make_router(app_config: AppConfig) -> APIRouter:
             ).fetchone()
         return float(row["duration_sec"] or 0.0)
 
+    def schema_feature_names(feature: dict[str, Any]) -> list[str]:
+        names = feature.get("names")
+        if isinstance(names, list):
+            return [str(item) for item in names]
+        shape = feature.get("shape") or []
+        if shape:
+            return [f"dim_{idx}" for idx in range(int(shape[0]))]
+        return []
+
+    def schema_feature_specs(
+        schema: dict[str, Any],
+        group_key: str,
+        legacy_schema_key: str,
+        legacy_column_key: str,
+    ) -> list[tuple[str, list[str]]]:
+        group = schema.get(group_key) or {}
+        if isinstance(group, dict) and group:
+            return [(key, schema_feature_names(feature or {})) for key, feature in group.items()]
+        legacy = schema.get(legacy_schema_key) or {}
+        if isinstance(legacy, dict) and legacy:
+            return [(legacy_column_key, schema_feature_names(legacy))]
+        return []
+
     def get_episode_row(conn: Any, dataset_id: str, task_id: str, episode_index: int) -> tuple[int, dict[str, Any]]:
         generation_id = require_generation(conn, dataset_id)
         row = conn.execute(
@@ -408,12 +431,12 @@ def make_router(app_config: AppConfig) -> APIRouter:
                 (dataset_id, generation_id, task_id),
             ).fetchone()
             schema = json_load(task["schema_json"], {}) if task else {}
-            state_names = ((schema.get("state") or {}).get("names")) or []
-            action_names = ((schema.get("action") or {}).get("names")) or []
+            state_specs = schema_feature_specs(schema, "state_features", "state", "observation.state")
+            action_specs = schema_feature_specs(schema, "action_features", "action", "action")
             parquet_path = ensure_path_in_dataset(dataset, episode["parquet_path"])
             if not parquet_path.exists():
                 raise HTTPException(status_code=404, detail="Parquet file is missing")
-            return read_episode_timeseries(parquet_path, state_names, action_names, downsample)
+            return read_episode_timeseries(parquet_path, state_specs, action_specs, downsample)
         finally:
             conn.close()
 
